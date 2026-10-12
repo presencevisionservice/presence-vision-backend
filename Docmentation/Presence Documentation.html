@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presence · API Documentation</title>
+<style>
+/* ============================================================
+   1. DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg-dark: #0f111a;
+  --bg-panel: #1a1d27;
+  --bg-code: #24283b;
+  --text-main: #a9b1d6;
+  --text-light: #c0caf5;
+  --text-heading: #ffffff;
+  --accent: #7aa2f7;
+  --accent-2: #bb9af7;
+  --accent-3: #89ddff;
+  --accent-hover: #89ddff;
+  --border-color: #2f334d;
+  --method-get: #9ece6a;
+  --method-post: #bb9af7;
+
+  --str: #9ece6a;
+  --num: #ff9e64;
+  --bool: #bb9af7;
+  --key: #7aa2f7;
+
+  --panel-glass: rgba(26, 29, 39, 0.72);
+  --card-bg: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.008));
+  --glow: rgba(122, 162, 247, .35);
+  --shadow: 0 30px 60px -35px rgba(0,0,0,.95);
+  --radius: 18px;
+  --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", "JetBrains Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+[data-theme="light"] {
+  --bg-dark: #eceffa;
+  --bg-panel: #ffffff;
+  --bg-code: #f7f9ff;
+  --text-main: #5c6689;
+  --text-light: #2a3053;
+  --text-heading: #0d1020;
+  --accent: #3b6ce0;
+  --accent-2: #8a4fbf;
+  --accent-3: #1a8fa8;
+  --accent-hover: #2a55c0;
+  --border-color: #dde3f2;
+  --method-get: #3f8f36;
+  --method-post: #8a4fbf;
+
+  --str: #2f7d32;
+  --num: #b3541e;
+  --bool: #8a4fbf;
+  --key: #2f6bd8;
+
+  --panel-glass: rgba(255, 255, 255, 0.78);
+  --card-bg: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.6));
+  --glow: rgba(59, 108, 224, .25);
+  --shadow: 0 30px 60px -40px rgba(35, 50, 100, .55);
+}
+
+/* ============================================================
+   2. RESET
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  line-height: 1.6;
+  position: relative;
+  transition: background-color .45s ease, color .45s ease;
+}
+
+::selection { background: var(--accent); color: #0f111a; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); background-clip: content-box; }
+
+/* ============================================================
+   3. ANIMATED BACKGROUND
+   ============================================================ */
+.bg-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  opacity: .38;
+  will-change: transform;
+}
+.blob-1 {
+  width: 560px; height: 560px;
+  background: radial-gradient(circle at 30% 30%, #7aa2f7, transparent 70%);
+  top: -180px; left: -140px;
+  animation: float1 24s ease-in-out infinite;
+}
+.blob-2 {
+  width: 620px; height: 620px;
+  background: radial-gradient(circle at 60% 40%, #bb9af7, transparent 70%);
+  bottom: -260px; right: -180px;
+  animation: float2 30s ease-in-out infinite;
+  opacity: .3;
+}
+.blob-3 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle at 50% 50%, #89ddff, transparent 70%);
+  top: 45%; left: 45%;
+  animation: float3 27s ease-in-out infinite;
+  opacity: .16;
+}
+@keyframes float1 {
+  0%,100% { transform: translate3d(0,0,0) scale(1); }
+  33%     { transform: translate3d(120px, 80px, 0) scale(1.12); }
+  66%     { transform: translate3d(-50px, 130px, 0) scale(.94); }
+}
+@keyframes float2 {
+  0%,100% { transform: translate3d(0,0,0) scale(1); }
+  40%     { transform: translate3d(-140px, -90px, 0) scale(1.08); }
+  75%     { transform: translate3d(60px, -150px, 0) scale(.92); }
+}
+@keyframes float3 {
+  0%,100% { transform: translate3d(-50%,-50%,0) scale(1); }
+  50%     { transform: translate3d(-60%,-40%,0) scale(1.2); }
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(122,162,247,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(122,162,247,.055) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 20%, transparent 78%);
+}
+[data-theme="light"] .grid-overlay { opacity: .55; }
+
+/* ============================================================
+   4. READING PROGRESS
+   ============================================================ */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 200;
+  background: transparent;
+  pointer-events: none;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-3), var(--accent-2));
+  box-shadow: 0 0 14px var(--glow);
+  transition: width .12s linear;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ============================================================
+   5. SIDEBAR
+   ============================================================ */
+nav {
+  position: relative;
+  z-index: 60;
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--panel-glass);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: transform .38s cubic-bezier(.4,0,.2,1), background-color .45s ease, border-color .45s ease;
+}
+
+.nav-header {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: 1.6rem 1.5rem 1.2rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+  width: 42px; height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0b0e17;
+  box-shadow: 0 8px 22px -8px var(--glow);
+  position: relative;
+  overflow: hidden;
+}
+.logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.75) 50%, transparent 70%);
+  transform: translateX(-130%);
+  animation: shine 4.5s ease-in-out infinite;
+}
+@keyframes shine {
+  0%, 62%  { transform: translateX(-130%); }
+  85%,100% { transform: translateX(130%); }
+}
+.logo svg { width: 22px; height: 22px; position: relative; z-index: 1; }
+
+.nav-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -.01em;
+  line-height: 1.2;
+}
+.nav-sub {
+  font-size: .72rem;
+  color: var(--text-main);
+  opacity: .75;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .1rem;
+}
+.pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--method-get);
+  box-shadow: 0 0 0 0 rgba(158,206,106,.6);
+  animation: pulseDot 2.2s infinite;
+}
+@keyframes pulseDot {
+  0%   { box-shadow: 0 0 0 0 rgba(158,206,106,.55); }
+  70%  { box-shadow: 0 0 0 7px rgba(158,206,106,0); }
+  100% { box-shadow: 0 0 0 0 rgba(158,206,106,0); }
+}
+
+/* Search */
+.nav-search {
+  padding: 1rem 1.25rem .5rem;
+  position: relative;
+}
+.nav-search svg {
+  position: absolute;
+  left: 1.85rem;
+  top: 50%;
+  transform: translateY(-40%);
+  width: 15px; height: 15px;
+  color: var(--text-main);
+  opacity: .6;
+  pointer-events: none;
+}
+.nav-search input {
+  width: 100%;
+  background: rgba(122,162,247,.06);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: .6rem .8rem .6rem 2.3rem;
+  color: var(--text-light);
+  font-family: var(--font-main);
+  font-size: .84rem;
+  outline: none;
+  transition: border-color .25s, box-shadow .25s, background-color .25s;
+}
+.nav-search input::placeholder { color: var(--text-main); opacity: .6; }
+.nav-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(122,162,247,.14);
+  background: rgba(122,162,247,.1);
+}
+
+/* Scroll area */
+.nav-scroll {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: .75rem 0 1.5rem;
+}
+
+.nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 0;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, rgba(122,162,247,.16), rgba(122,162,247,0));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .38s cubic-bezier(.34,1.2,.4,1), height .3s ease, opacity .3s ease;
+  box-shadow: -6px 0 24px -8px var(--glow);
+}
+
+.nav-group { margin-bottom: 1.35rem; }
+
+.nav-group-title {
+  padding: 0 1.5rem;
+  font-size: .67rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-main);
+  opacity: .65;
+  margin-bottom: .45rem;
+  font-weight: 700;
+}
+
+/* ---- Part header inside the sidebar ---- */
+.nav-part {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: 1.5rem 1.1rem .85rem;
+  padding: .55rem .8rem;
+  border-radius: 11px;
+  text-decoration: none;
+  background: linear-gradient(100deg, rgba(122,162,247,.14), rgba(187,154,247,.06));
+  border: 1px solid rgba(122,162,247,.22);
+  transition: border-color .25s ease, transform .25s ease, background-color .25s ease;
+}
+.nav-part:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+}
+.nav-part-block:first-of-type .nav-part { margin-top: .3rem; }
+
+.nav-part-num {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .05em;
+  flex-shrink: 0;
+}
+.nav-part-label {
+  font-size: .76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item {
+  position: relative;
+  padding: .55rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  text-decoration: none;
+  color: var(--text-light);
+  font-size: .875rem;
+  border-left: 3px solid transparent;
+  transition: color .22s ease, padding-left .25s ease, opacity .25s;
+}
+.nav-item span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-item:hover { color: var(--accent-hover); padding-left: 1.75rem; }
+.nav-item.active { color: var(--accent); font-weight: 600; }
+
+.nav-empty {
+  display: none;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-size: .82rem;
+  color: var(--text-main);
+  opacity: .7;
+}
+
+/* Method badges */
+.method-badge {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  font-weight: 800;
+  padding: .2rem .42rem;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.badge-get  { background: rgba(158, 206, 106, 0.14); color: var(--method-get); border-color: rgba(158,206,106,.25); }
+.badge-post { background: rgba(187, 154, 247, 0.14); color: var(--method-post); border-color: rgba(187,154,247,.25); }
+.badge-base { background: rgba(137, 221, 255, 0.12); color: var(--accent-3); border-color: rgba(137,221,255,.28); }
+[data-theme="light"] .badge-base { background: rgba(26,143,168,.12); border-color: rgba(26,143,168,.28); }
+
+.nav-item:hover .method-badge { transform: scale(1.06); box-shadow: 0 0 14px -4px currentColor; }
+
+/* Nav footer / theme toggle */
+.nav-footer {
+  border-top: 1px solid var(--border-color);
+  padding: .9rem 1.25rem;
+}
+.theme-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  background: rgba(122,162,247,.07);
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  font-family: var(--font-main);
+  font-size: .8rem;
+  font-weight: 600;
+  padding: .6rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(122,162,247,.14);
+  transform: translateY(-1px);
+}
+.theme-toggle svg { width: 15px; height: 15px; }
+.icon-sun { display: none; }
+[data-theme="light"] .icon-sun { display: block; }
+[data-theme="light"] .icon-moon { display: none; }
+
+/* ============================================================
+   6. MAIN CONTENT
+   ============================================================ */
+main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3.5rem 4rem 8rem;
+  scroll-behavior: smooth;
+}
+
+/* Hero */
+.intro {
+  max-width: 880px;
+  margin-bottom: 3.5rem;
+  animation: heroIn .9s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(122,162,247,.1);
+  border: 1px solid rgba(122,162,247,.28);
+  padding: .35rem .85rem;
+  border-radius: 999px;
+  margin-bottom: 1.5rem;
+}
+.hero-badge .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--glow);
+  animation: pulseDot 2.2s infinite;
+}
+
+.intro h1 {
+  color: var(--text-heading);
+  font-size: clamp(2rem, 4.2vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.12;
+  margin-bottom: 1rem;
+}
+.grad {
+  background: linear-gradient(100deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 9s ease infinite;
+}
+@keyframes gradientShift {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+
+.intro p { font-size: 1.08rem; margin-bottom: 1.5rem; max-width: 68ch; }
+
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-bottom: 1.75rem;
+}
+.chip {
+  font-size: .76rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: .35rem .75rem;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  transition: transform .25s ease, border-color .25s ease, color .25s ease;
+}
+.chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- Two-part overview cards ---- */
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.75rem;
+  max-width: 800px;
+}
+.part-card {
+  position: relative;
+  display: block;
+  padding: 1.35rem 1.4rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform .3s cubic-bezier(.2,.7,.3,1), border-color .3s ease, box-shadow .3s ease;
+}
+.part-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 100% at 0% 0%, rgba(122,162,247,.18), transparent 62%);
+  opacity: 0;
+  transition: opacity .35s ease;
+  pointer-events: none;
+}
+.part-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(122,162,247,.45);
+  box-shadow: var(--shadow);
+}
+.part-card:hover::after { opacity: 1; }
+
+.part-card-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  color: var(--accent);
+  margin-bottom: .5rem;
+  position: relative;
+  z-index: 1;
+}
+.part-card h3 {
+  font-size: 1.12rem;
+  color: var(--text-heading);
+  font-weight: 800;
+  letter-spacing: -.01em;
+  margin-bottom: .35rem;
+  position: relative;
+  z-index: 1;
+}
+.part-card p {
+  font-size: .87rem;
+  color: var(--text-main);
+  margin-bottom: .9rem;
+  position: relative;
+  z-index: 1;
+}
+.part-card-meta {
+  font-family: var(--font-mono);
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--accent-2);
+  position: relative;
+  z-index: 1;
+}
+
+.alert {
+  position: relative;
+  background: rgba(122, 162, 247, 0.09);
+  border: 1px solid rgba(122,162,247,.22);
+  border-left: 4px solid var(--accent);
+  padding: 1.15rem 1.35rem;
+  border-radius: 0 12px 12px 0;
+  font-size: .94rem;
+  overflow: hidden;
+}
+.alert::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(122,162,247,.12) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sweep {
+  0%, 55%  { transform: translateX(-100%); }
+  90%,100% { transform: translateX(100%); }
+}
+.alert code {
+  font-family: var(--font-mono);
+  font-size: .85em;
+  background: rgba(122,162,247,.16);
+  color: var(--accent-hover);
+  padding: .12rem .4rem;
+  border-radius: 5px;
+}
+.alert + .alert { margin-top: .85rem; }
+
+/* ============================================================
+   7. PART DIVIDERS (in the main column)
+   ============================================================ */
+.part-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  max-width: 1060px;
+  margin: 2.5rem 0 2rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border-color);
+  scroll-margin-top: 1.5rem;
+}
+.part-divider-num {
+  font-family: var(--font-mono);
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.05em;
+  background: linear-gradient(160deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  flex-shrink: 0;
+}
+.part-divider h2 {
+  font-size: 1.5rem;
+  color: var(--text-heading);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+}
+.part-divider p {
+  font-size: .87rem;
+  color: var(--text-main);
+  margin-top: .15rem;
+}
+
+/* ============================================================
+   8. ENDPOINT CARDS
+   ============================================================ */
+.endpoint {
+  position: relative;
+  max-width: 1060px;
+  margin-bottom: 2.5rem;
+  padding: 2rem 2rem 2.15rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  scroll-margin-top: 1.5rem;
+  transition: border-color .35s ease, box-shadow .35s ease, transform .35s cubic-bezier(.2,.7,.3,1),
+              background-color .45s ease;
+}
+
+/* animated gradient border */
+.endpoint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2) 45%, transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity .4s ease;
+  pointer-events: none;
+}
+
+.endpoint.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+}
+.endpoint.reveal.in {
+  opacity: 1;
+  transform: none;
+  transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1),
+              border-color .35s ease, box-shadow .35s ease;
+}
+
+.endpoint:hover {
+  transform: translateY(-4px);
+  border-color: rgba(122,162,247,.4);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(122,162,247,.08);
+}
+.endpoint:hover::before { opacity: 1; }
+
+.endpoint.hidden-by-search { display: none; }
+
+.endpoint h2 {
+  color: var(--text-heading);
+  font-size: 1.42rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  margin-bottom: .55rem;
+  flex-wrap: wrap;
+}
+.endpoint > p { max-width: 78ch; font-size: .95rem; }
+.endpoint > p + p { margin-top: .75rem; }
+.endpoint > p code,
+.grid-layout p code,
+.col p code,
+.col li code {
+  font-family: var(--font-mono);
+  font-size: .85em;
+  background: rgba(122,162,247,.14);
+  color: var(--accent-hover);
+  padding: .1rem .38rem;
+  border-radius: 5px;
+}
+
+/* ============================================================
+   9. URL BAR
+   ============================================================ */
+.url-bar {
+  position: relative;
+  background: var(--bg-code);
+  padding: .8rem 1rem;
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  flex-wrap: wrap;
+  margin: 1.4rem 0 .5rem;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: border-color .3s ease, box-shadow .3s ease;
+}
+.url-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(122,162,247,.09), transparent);
+  transform: translateX(-150%);
+  animation: urlSweep 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes urlSweep {
+  0%, 60%  { transform: translateX(-150%); }
+  100%     { transform: translateX(320%); }
+}
+.url-bar:hover {
+  border-color: rgba(122,162,247,.45);
+  box-shadow: 0 0 0 3px rgba(122,162,247,.07);
+}
+.url-base { color: #565f89; }
+[data-theme="light"] .url-base { color: #97a1c4; }
+
+/* The prominent base-URL bar */
+.base-url-bar {
+  font-size: .98rem;
+  padding: .95rem 1.05rem;
+  margin-top: 1.35rem;
+}
+.base-url-bar .copy-btn { opacity: 1; transform: none; }
+
+/* ============================================================
+   10. GRID / PARAMS
+   ============================================================ */
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1.75rem;
+}
+
+.col h3 {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 1rem;
+  color: var(--text-heading);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: .55rem;
+  font-weight: 700;
+}
+.col p { font-size: .9rem; }
+.col p + .code-block { margin-top: 1rem; }
+
+.param-list { list-style: none; }
+
+.param-item {
+  position: relative;
+  margin-bottom: .9rem;
+  padding: .55rem .75rem .55rem .85rem;
+  border-radius: 10px;
+  border-left: 2px solid transparent;
+  transition: background-color .25s ease, border-color .25s ease, transform .25s ease;
+}
+.param-item:hover {
+  background: rgba(122,162,247,.06);
+  border-left-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.param-name {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: .88rem;
+}
+.param-type {
+  font-size: .74rem;
+  color: #565f89;
+  margin-left: .5rem;
+  font-family: var(--font-mono);
+}
+[data-theme="light"] .param-type { color: #97a1c4; }
+.param-desc { margin-top: .3rem; font-size: .86rem; }
+
+/* ============================================================
+   11. CODE BLOCKS
+   ============================================================ */
+.code-block {
+  position: relative;
+  background: var(--bg-code);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: 1.1rem;
+  transition: border-color .3s ease, box-shadow .3s ease, transform .3s ease;
+}
+.code-block:hover {
+  border-color: rgba(122,162,247,.38);
+  box-shadow: 0 12px 32px -22px rgba(0,0,0,.9), 0 0 0 3px rgba(122,162,247,.05);
+}
+
+.code-header {
+  background: rgba(0,0,0,.22);
+  padding: .5rem .85rem;
+  font-size: .75rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+[data-theme="light"] .code-header { background: rgba(120,140,200,.08); }
+.code-header > span:first-child { margin-right: auto; color: var(--text-light); }
+
+.code-status { font-weight: 700; font-size: .72rem; }
+.code-status.success { color: var(--method-get); }
+.code-status.error   { color: #f7768e; }
+.code-status.success::before,
+.code-status.error::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: .4rem;
+  vertical-align: middle;
+  box-shadow: 0 0 8px currentColor;
+}
+
+pre {
+  padding: 1.05rem 1.15rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: .84rem;
+  line-height: 1.65;
+  color: var(--text-light);
+  tab-size: 2;
+}
+
+.str  { color: var(--str); }
+.num  { color: var(--num); }
+.bool { color: var(--bool); }
+.key  { color: var(--key); }
+
+/* Copy button */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(122,162,247,.09);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: .28rem .58rem;
+  border-radius: 7px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: all .22s ease;
+  white-space: nowrap;
+}
+.copy-btn svg { width: 12px; height: 12px; }
+.code-block:hover .copy-btn,
+.url-bar:hover .copy-btn { opacity: 1; transform: none; }
+.copy-btn:hover {
+  background: rgba(122,162,247,.2);
+  color: var(--accent-hover);
+  border-color: var(--accent);
+}
+.copy-btn.copied {
+  opacity: 1;
+  color: var(--method-get);
+  border-color: rgba(158,206,106,.5);
+  background: rgba(158,206,106,.14);
+}
+.url-bar .copy-btn { margin-left: auto; }
+
+@media (hover: none) {
+  .copy-btn { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   12. FLOATING ELEMENTS
+   ============================================================ */
+.to-top {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--panel-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  color: var(--accent);
+  cursor: pointer;
+  z-index: 90;
+  opacity: 0;
+  transform: translateY(16px) scale(.9);
+  pointer-events: none;
+  transition: all .35s cubic-bezier(.34,1.3,.5,1);
+  box-shadow: var(--shadow);
+}
+.to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+.to-top:hover {
+  background: var(--accent);
+  color: #0b0e17;
+  border-color: var(--accent);
+  box-shadow: 0 0 26px -6px var(--glow);
+}
+.to-top svg { width: 18px; height: 18px; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 2.2rem;
+  transform: translate(-50%, 24px);
+  background: var(--panel-glass);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(158,206,106,.4);
+  color: var(--text-light);
+  font-size: .84rem;
+  font-weight: 600;
+  padding: .65rem 1.2rem;
+  border-radius: 999px;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease, transform .35s cubic-bezier(.34,1.3,.5,1);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--method-get);
+  box-shadow: 0 0 10px var(--method-get);
+}
+
+/* Mobile menu toggle + backdrop */
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 80;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  place-items: center;
+  background: var(--panel-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all .25s ease;
+}
+.menu-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.menu-toggle svg { width: 20px; height: 20px; }
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(6, 8, 15, .6);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+.backdrop.show { opacity: 1; pointer-events: auto; }
+
+/* ============================================================
+   13. RESPONSIVE
+   ============================================================ */
+@media (max-width: 1180px) {
+  main { padding: 3rem 2.5rem 7rem; }
+}
+
+@media (max-width: 1024px) {
+  nav {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 300px;
+    z-index: 70;
+    transform: translateX(-102%);
+    box-shadow: 30px 0 60px -30px rgba(0,0,0,.8);
+  }
+  nav.open { transform: translateX(0); }
+  .menu-toggle { display: grid; }
+  main { padding: 5rem 1.5rem 7rem; }
+  .to-top { right: 1.25rem; bottom: 1.25rem; }
+}
+
+@media (max-width: 860px) {
+  .grid-layout { grid-template-columns: 1fr; gap: 1.75rem; }
+  .parts-grid { grid-template-columns: 1fr; }
+  .endpoint { padding: 1.5rem 1.25rem 1.75rem; }
+  .intro h1 { font-size: 2rem; }
+  main { padding: 5rem 1.15rem 6rem; }
+  .part-divider-num { font-size: 1.7rem; }
+  .part-divider h2 { font-size: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .hero-chips { gap: .4rem; }
+  .chip { font-size: .7rem; padding: .3rem .6rem; }
+  .endpoint h2 { font-size: 1.2rem; }
+  .url-bar { font-size: .78rem; }
+  .base-url-bar { font-size: .82rem; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- Animated background -->
+<div class="bg-decor" aria-hidden="true">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+  <div class="grid-overlay"></div>
+</div>
+
+<!-- Reading progress -->
+<div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+
+<!-- Mobile menu button -->
+<button class="menu-toggle" id="menuToggle" aria-label="Open navigation">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M3 6h18M3 12h18M3 18h18"/>
+  </svg>
+</button>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- ============================ SIDEBAR ============================ -->
+<nav id="sidebar">
+  <div class="nav-header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/>
+        <path d="M9.5 12l1.8 1.8 3.5-3.6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-title">Presence</div>
+      <div class="nav-sub"><span class="pulse-dot"></span> API Docs · v1</div>
+    </div>
+  </div>
+
+  <div class="nav-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+    </svg>
+    <input type="text" id="navSearch" placeholder="Search documentation..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="nav-scroll" id="navScroll">
+    <div class="nav-indicator" id="navIndicator"></div>
+
+    <!-- ---------- Getting Started (global) ---------- -->
+    <div class="nav-part-block">
+      <div class="nav-group">
+        <div class="nav-group-title">Getting Started</div>
+        <a href="#base-url" class="nav-item" data-search="base url host server root api endpoint environment">
+          <span class="method-badge badge-base">BASE</span><span>Base URL</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ---------- PART 01 · AUTHENTICATION ---------- -->
+    <div class="nav-part-block">
+      <a href="#part-authentication" class="nav-part">
+        <span class="nav-part-num">01</span>
+        <span class="nav-part-label">Authentication</span>
+      </a>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Core Authentication</div>
+        <a href="#user-registration" class="nav-item" data-search="post registration register user create account signup">
+          <span class="method-badge badge-post">POST</span><span>Registration</span>
+        </a>
+        <a href="#user-otp-verify" class="nav-item" data-search="post verify otp email activate account">
+          <span class="method-badge badge-post">POST</span><span>Verify OTP</span>
+        </a>
+        <a href="#user-login" class="nav-item" data-search="post login sign in authenticate credentials">
+          <span class="method-badge badge-post">POST</span><span>Login</span>
+        </a>
+        <a href="#user-logout" class="nav-item" data-search="post logout sign out blacklist token">
+          <span class="method-badge badge-post">POST</span><span>Logout</span>
+        </a>
+        <a href="#refresh-tokens" class="nav-item" data-search="get refresh tokens rotate access cookie">
+          <span class="method-badge badge-get">GET</span><span>Refresh Tokens</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Session &amp; Profile</div>
+        <a href="#check-auth" class="nav-item" data-search="get check auth authentication session ping">
+          <span class="method-badge badge-get">GET</span><span>Check Auth</span>
+        </a>
+        <a href="#get-user-details" class="nav-item" data-search="get user details profile seller manager admin">
+          <span class="method-badge badge-get">GET</span><span>User Details</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Two-Factor Auth</div>
+        <a href="#set-two-step" class="nav-item" data-search="post set two step pin 2fa two factor enable">
+          <span class="method-badge badge-post">POST</span><span>Set 2FA PIN</span>
+        </a>
+        <a href="#verify-two-step" class="nav-item" data-search="post verify two step pin 2fa two factor challenge">
+          <span class="method-badge badge-post">POST</span><span>Verify 2FA PIN</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Password Recovery</div>
+        <a href="#reset-password" class="nav-item" data-search="post request reset password forgot recovery email">
+          <span class="method-badge badge-post">POST</span><span>Request Reset</span>
+        </a>
+        <a href="#verify-reset-otp" class="nav-item" data-search="post verify reset otp password token">
+          <span class="method-badge badge-post">POST</span><span>Verify Reset OTP</span>
+        </a>
+        <a href="#change-password" class="nav-item" data-search="post change password new credentials commit">
+          <span class="method-badge badge-post">POST</span><span>Change Password</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">OAuth</div>
+        <a href="#google-auth" class="nav-item" data-search="get google oauth login callback authorization tokens">
+          <span class="method-badge badge-get">GET</span><span>Google OAuth</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ---------- PART 02 · API ---------- -->
+    <div class="nav-part-block">
+      <a href="#part-api" class="nav-part">
+        <span class="nav-part-num">02</span>
+        <span class="nav-part-label">API</span>
+      </a>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Conventions</div>
+        <a href="#api-overview" class="nav-item" data-search="api overview conventions headers versioning content type envelope">
+          <span class="method-badge badge-base">DOC</span><span>Overview</span>
+        </a>
+        <a href="#api-errors" class="nav-item" data-search="errors status codes pagination rate limit 429">
+          <span class="method-badge badge-base">DOC</span><span>Errors &amp; Pagination</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Endpoint Reference</div>
+        <a href="#api-health" class="nav-item" data-search="get health status ping uptime service">
+          <span class="method-badge badge-get">GET</span><span>Health Check</span>
+        </a>
+        <a href="#api-resources-list" class="nav-item" data-search="get list resources collection pagination index">
+          <span class="method-badge badge-get">GET</span><span>List Resources</span>
+        </a>
+        <a href="#api-resources-create" class="nav-item" data-search="post create resource store new">
+          <span class="method-badge badge-post">POST</span><span>Create Resource</span>
+        </a>
+        <a href="#api-resources-detail" class="nav-item" data-search="get retrieve resource detail show id">
+          <span class="method-badge badge-get">GET</span><span>Retrieve Resource</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-empty" id="navEmpty">No endpoints match your search.</div>
+  </div>
+
+  <div class="nav-footer">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+      </svg>
+      <span id="themeLabel">Light mode</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ============================ MAIN ============================ -->
+<main id="main-content">
+
+  <!-- ======================= HERO ======================= -->
+  <section class="intro">
+    <div class="hero-badge"><span class="dot"></span> Presence Platform · API v1</div>
+    <h1>Presence <span class="grad">API Documentation</span></h1>
+    <p>
+      The complete integration guide for the <strong>Presence</strong> backend. The documentation is organised in
+      two parts &mdash; <strong>Authentication</strong>, which covers identity, sessions and account security,
+      and <strong>API</strong>, which covers the core Presence resources.
+    </p>
+
+    <div class="hero-chips">
+      <span class="chip">Base URL</span>
+      <span class="chip">JWT + HttpOnly Cookies</span>
+      <span class="chip">2FA Ready</span>
+      <span class="chip">OAuth 2.0</span>
+      <span class="chip">Versioned /api/v1</span>
+    </div>
+
+    <div class="parts-grid">
+      <a href="#part-authentication" class="part-card">
+        <span class="part-card-num">PART 01</span>
+        <h3>Authentication</h3>
+        <p>Registration, OTP verification, login, 2FA, password recovery and Google OAuth.</p>
+        <span class="part-card-meta">13 endpoints &rarr;</span>
+      </a>
+      <a href="#part-api" class="part-card">
+        <span class="part-card-num">PART 02</span>
+        <h3>API</h3>
+        <p>Core Presence resources, request conventions, pagination and error handling.</p>
+        <span class="part-card-meta">4 endpoints &rarr;</span>
+      </a>
+    </div>
+
+    <div class="alert">
+      <strong>Frontend Integration Note:</strong> Presence uses stateless JWT authentication, but tokens are transported
+      exclusively through <code>HttpOnly</code> cookies (<code>access</code> and <code>refresh</code>).
+      Clients (Axios, Fetch) must send <code>withCredentials: true</code> on every request so the browser attaches
+      cookies automatically. Never extract tokens manually or store them in <code>localStorage</code>.
+    </div>
+  </section>
+
+  <!-- ======================= BASE URL ======================= -->
+  <section id="base-url" class="endpoint">
+    <h2>Base URL</h2>
+    <p>
+      Every endpoint documented on this page &mdash; in <strong>both</strong> Part 01 and Part 02 &mdash; is relative to a
+      single base API URL. Prefix all paths below with it.
+    </p>
+
+    <div class="url-bar base-url-bar">
+      <span class="method-badge badge-base">BASE</span>
+      <span>https://presence-backend-hnix.onrender.com</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Configuring a Client</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>JavaScript · Axios</span>
+            <span class="code-status success">Recommended</span>
+          </div>
+          <pre><code><span class="key">const</span> BASE_URL = <span class="str">"https://presence-backend-hnix.onrender.com"</span>;
+
+axios.defaults.baseURL = BASE_URL;
+axios.defaults.withCredentials = <span class="bool">true</span>;</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span>Fetch</span></div>
+          <pre><code>fetch(<span class="str">`${BASE_URL}/authentication/user_login`</span>, {
+  method: <span class="str">"POST"</span>,
+  credentials: <span class="str">"include"</span>,
+  headers: { <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span> },
+  body: JSON.stringify(payload)
+});</code></pre>
+        </div>
+      </div>
+
+      <div class="col">
+        <h3>Environments</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">Production</span> <span class="param-type">https</span>
+            <div class="param-desc"><code>https://presence-backend-hnix.onrender.com</code></div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">Staging</span> <span class="param-type">https</span>
+            <div class="param-desc"><code>https://staging-api.presence.app</code></div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">Local development</span> <span class="param-type">http</span>
+            <div class="param-desc"><code>http://127.0.0.1:8000</code></div>
+          </li>
+        </ul>
+        <p>
+          Cookies are issued with <code>Secure</code> and <code>SameSite</code> attributes, so cross-origin requests
+          require HTTPS plus the correct CORS credentials configuration on the server.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= PART 01 ======================= -->
+  <div class="part-divider" id="part-authentication">
+    <span class="part-divider-num">01</span>
+    <div>
+      <h2>Authentication</h2>
+      <p>Identity, sessions, two-factor security and account recovery.</p>
+    </div>
+  </div>
+
+  <!-- REGISTRATION -->
+  <section id="user-registration" class="endpoint">
+    <h2>User Registration</h2>
+    <p>Registers a new user and triggers an OTP email for account verification.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/user_registration</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">email</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">User's valid email address.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">username</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Unique account username.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">password</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Secure password string.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>201 Created</span>
+            <span class="code-status success">Success</span>
+          </div>
+          <pre><code>{
+  <span class="key">"verification_token"</span>: <span class="str">"xyz123_url_safe_token"</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span>400 Bad Request</span>
+            <span class="code-status error">Error</span>
+          </div>
+          <pre><code>{
+  <span class="key">"error"</span>: <span class="str">"Email already exists."</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFY OTP -->
+  <section id="user-otp-verify" class="endpoint">
+    <h2>Verify Account OTP</h2>
+    <p>Activates a newly registered account and sets <code>HttpOnly</code> session cookies upon success. Includes a rate limit of 5 attempts per 15 minutes.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/user_otp_verify</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">verification_token</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Token returned from the registration step.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">otp</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">4-digit code sent to user email.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK</span>
+            <span class="code-status success">Sets access &amp; refresh cookies</span>
+          </div>
+          <pre><code>{
+  <span class="key">"msg"</span>: <span class="str">"OTP Verified, User is Now Active"</span>,
+  <span class="key">"store_date"</span>: <span class="str">"2026-09-29"</span>,
+  <span class="key">"store_time"</span>: <span class="str">"12:50:07"</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span>429 Too Many Requests</span>
+            <span class="code-status error">Rate Limited</span>
+          </div>
+          <pre><code>{
+  <span class="key">"error"</span>: <span class="str">"Too many Verification Requests. Try Again Later"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="user-login" class="endpoint">
+    <h2>User Login</h2>
+    <p>Authenticates standard credentials. If 2FA is off, issues cookies immediately. If 2FA is on, redirects to PIN challenge. Max 5 attempts per 15 minutes.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/user_login</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">email</span> <span class="param-type">string (required)</span>
+          </li>
+          <li class="param-item">
+            <span class="param-name">password</span> <span class="param-type">string (required)</span>
+          </li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK (Standard Login)</span>
+            <span class="code-status success">Sets cookies</span>
+          </div>
+          <pre><code>{
+  <span class="key">"msg"</span>: <span class="str">"Login Successful"</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK (2FA Enabled)</span>
+            <span class="code-status error">Requires PIN routing</span>
+          </div>
+          <pre><code>{
+  <span class="key">"is_restricted_account"</span>: <span class="bool">true</span>,
+  <span class="key">"email"</span>: <span class="str">"user@domain.com"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGOUT -->
+  <section id="user-logout" class="endpoint">
+    <h2>User Logout</h2>
+    <p>Blacklists the current refresh token and deletes <code>access</code> and <code>refresh</code> cookies from the client browser. Requires active session.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/user_logout</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Headers</h3>
+        <p>Browser must pass the <code>refresh</code> cookie natively via <code>withCredentials</code>.</p>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK</span>
+            <span class="code-status success">Cookies deleted</span>
+          </div>
+          <pre><code>{
+  <span class="key">"msg"</span>: <span class="str">"Logout Success"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFRESH TOKENS -->
+  <section id="refresh-tokens" class="endpoint">
+    <h2>Refresh Tokens</h2>
+    <p>Evaluates the <code>refresh</code> cookie. If nearing expiration (within 50 minutes of end-life), rotates both access and refresh cookies. Otherwise, rotates only the access cookie (10 min expiry).</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/refresh_user_tokens</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Requirements</h3>
+        <p>Requires active <code>refresh</code> cookie. Endpoint is open (AllowAny) but will fail without the cookie.</p>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK (Rotated Access Only)</span>
+            <span class="code-status success">Updated</span>
+          </div>
+          <pre><code>{
+  <span class="key">"msg"</span>: <span class="str">"Updated Access Token"</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span>401 Unauthorized</span>
+            <span class="code-status error">Expired</span>
+          </div>
+          <pre><code><span class="str">"Refresh Token Expired. Please Login Again"</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHECK AUTH -->
+  <section id="check-auth" class="endpoint">
+    <h2>Check Authentication</h2>
+    <p>Simple ping to verify if the client's current access token is valid.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/check_user_authentication</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col"><h3>Requirements</h3><p>Requires active <code>access</code> cookie.</p></div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Valid</span></div>
+          <pre><code><span class="str">"Authenticated"</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USER DETAILS -->
+  <section id="get-user-details" class="endpoint">
+    <h2>Get User Details</h2>
+    <p>Retrieves profile flags and metadata for the currently authenticated user.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/get_user_details</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col"><h3>Requirements</h3><p>Requires active <code>access</code> cookie.</p></div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span></div>
+          <pre><code>{
+  <span class="key">"username"</span>: <span class="str">"user_name"</span>,
+  <span class="key">"email"</span>: <span class="str">"email@domain.com"</span>,
+  <span class="key">"is_seller"</span>: <span class="bool">false</span>,
+  <span class="key">"is_manager"</span>: <span class="bool">false</span>,
+  <span class="key">"is_admin"</span>: <span class="bool">false</span>,
+  <span class="key">"is_protected"</span>: <span class="bool">true</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SET 2FA -->
+  <section id="set-two-step" class="endpoint">
+    <h2>Set 2FA PIN</h2>
+    <p>Enables two-factor authentication and binds a 5-digit PIN to the user profile.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/set_two_step_pin</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">two_factor_pin</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Strictly 5 numeric characters.</div>
+          </li>
+        </ul>
+        <p>Requires active <code>access</code> cookie.</p>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Success</span></div>
+          <pre><code><span class="str">"Two Factor PIN is Set"</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFY 2FA -->
+  <section id="verify-two-step" class="endpoint">
+    <h2>Verify 2FA PIN</h2>
+    <p>Challenges user during the login flow if their account returned <code>is_restricted_account: true</code>. Issues session cookies upon success.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/verify_two_step_pin</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">user_email</span> <span class="param-type">string (required)</span>
+          </li>
+          <li class="param-item">
+            <span class="param-name">two_step_pin</span> <span class="param-type">string (required)</span>
+          </li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Sets cookies</span></div>
+          <pre><code>{
+  <span class="key">"msg"</span>: <span class="str">"PIN Verified"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESET PASSWORD -->
+  <section id="reset-password" class="endpoint">
+    <h2>Request Password Reset</h2>
+    <p>Initiates password recovery via email OTP.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/reset_user_password</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">user_email</span> <span class="param-type">string</span>
+          </li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span></div>
+          <pre><code>{
+  <span class="key">"verification_token"</span>: <span class="str">"abc123_token"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFY RESET OTP -->
+  <section id="verify-reset-otp" class="endpoint">
+    <h2>Verify Reset OTP</h2>
+    <p>Validates the emailed OTP and returns a <em>new</em> verification token required to authorize the actual password change step.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/verify_reset_password_otp</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item"><span class="param-name">verification_token</span> <span class="param-type">string</span></li>
+          <li class="param-item"><span class="param-name">otp</span> <span class="param-type">string</span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span></div>
+          <pre><code>{
+  <span class="key">"verification_token"</span>: <span class="str">"new_auth_token_for_change"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHANGE PASSWORD -->
+  <section id="change-password" class="endpoint">
+    <h2>Change Password</h2>
+    <p>Commits the new password to the database using the token generated in the previous step.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/change_user_password</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item"><span class="param-name">verification_token</span> <span class="param-type">string</span></li>
+          <li class="param-item"><span class="param-name">pass1</span> <span class="param-type">string (min: 8 chars)</span></li>
+          <li class="param-item"><span class="param-name">pass2</span> <span class="param-type">string (must match pass1)</span></li>
+        </ul>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Success</span></div>
+          <pre><code><span class="str">"Password Changed Successfully"</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OAUTH -->
+  <section id="google-auth" class="endpoint">
+    <h2>Google OAuth Flow</h2>
+    <p>Handles seamless third-party login via Google.</p>
+
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/login/google/</span>
+    </div>
+    <p style="margin-bottom: 2rem;"><strong>Step 1:</strong> Redirect the user's browser to this endpoint. It dynamically builds the Google Consent Screen URL and redirects the client.</p>
+
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/callback/google/</span>
+    </div>
+    <p style="margin-bottom: 2rem;"><strong>Step 2:</strong> Handled by Backend. Google returns the authorization code here, backend creates/finds the user, then redirects back to the frontend UI appending <code>?verification_token=...</code> to the URL.</p>
+
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/authentication/get_authorization_tokens/&lt;verification_token&gt;</span>
+    </div>
+    <p><strong>Step 3:</strong> Front-end intercepts the token from the URL params and calls this endpoint to trade it for secure <code>HttpOnly</code> cookies.</p>
+  </section>
+
+  <!-- ======================= PART 02 ======================= -->
+  <div class="part-divider" id="part-api">
+    <span class="part-divider-num">02</span>
+    <div>
+      <h2>API</h2>
+      <p>Core Presence resources, conventions and endpoint reference.</p>
+    </div>
+  </div>
+
+  <!-- API OVERVIEW -->
+  <section id="api-overview" class="endpoint">
+    <h2>API Overview &amp; Conventions</h2>
+    <p>
+      Every endpoint in Part 02 shares the same <strong>base URL</strong>, the same cookie-based authentication model
+      and the same response envelope as Part 01. The rules below apply to all requests.
+    </p>
+
+    <div class="url-bar base-url-bar">
+      <span class="method-badge badge-base">BASE</span>
+      <span>https://presence-backend-hnix.onrender.com/api/v1</span>
+    </div>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Conventions</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">Content-Type</span> <span class="param-type">header</span>
+            <div class="param-desc">Always <code>application/json</code> for <code>POST</code>, <code>PUT</code> and <code>PATCH</code> bodies.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">Accept</span> <span class="param-type">header</span>
+            <div class="param-desc">Send <code>application/json</code>.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">Credentials</span> <span class="param-type">client config</span>
+            <div class="param-desc">Set <code>withCredentials: true</code> so the <code>access</code> cookie is attached automatically.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">Versioning</span> <span class="param-type">path prefix</span>
+            <div class="param-desc">Core resources live under <code>/api/v1/</code>. Auth endpoints are unversioned.</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h3>Response Envelope</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>200 OK</span>
+            <span class="code-status success">Success</span>
+          </div>
+          <pre><code>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: { ... },
+  <span class="key">"meta"</span>: {
+    <span class="key">"request_id"</span>: <span class="str">"req_8f2c1a"</span>
+  }
+}</code></pre>
+        </div>
+        <p>Endpoints that return a single primitive (for example a status string) may bypass the envelope.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- API ERRORS -->
+  <section id="api-errors" class="endpoint">
+    <h2>Errors, Pagination &amp; Rate Limits</h2>
+    <p>Consistent error shapes and list behaviour across all Presence resources.</p>
+
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Error Shape</h3>
+        <div class="code-block">
+          <div class="code-header">
+            <span>400 Bad Request</span>
+            <span class="code-status error">Error</span>
+          </div>
+          <pre><code>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>: <span class="str">"validation_error"</span>,
+    <span class="key">"message"</span>: <span class="str">"Field 'email' is required."</span>,
+    <span class="key">"fields"</span>: { <span class="key">"email"</span>: [<span class="str">"This field is required."</span>] }
+  }
+}</code></pre>
+        </div>
+
+        <h3 style="margin-top:1.5rem;">Status Codes</h3>
+        <ul class="param-list">
+          <li class="param-item"><span class="param-name">200</span> <span class="param-type">OK</span><div class="param-desc">Request succeeded.</div></li>
+          <li class="param-item"><span class="param-name">201</span> <span class="param-type">Created</span><div class="param-desc">Resource created.</div></li>
+          <li class="param-item"><span class="param-name">400</span> <span class="param-type">Bad Request</span><div class="param-desc">Validation failed.</div></li>
+          <li class="param-item"><span class="param-name">401</span> <span class="param-type">Unauthorized</span><div class="param-desc">Missing or expired <code>access</code> cookie &mdash; call the refresh endpoint.</div></li>
+          <li class="param-item"><span class="param-name">403</span> <span class="param-type">Forbidden</span><div class="param-desc">Authenticated but lacking permission.</div></li>
+          <li class="param-item"><span class="param-name">404</span> <span class="param-type">Not Found</span><div class="param-desc">Resource does not exist.</div></li>
+          <li class="param-item"><span class="param-name">429</span> <span class="param-type">Too Many Requests</span><div class="param-desc">Rate limit exceeded &mdash; back off and retry.</div></li>
+          <li class="param-item"><span class="param-name">500</span> <span class="param-type">Server Error</span><div class="param-desc">Unexpected server failure.</div></li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h3>Pagination</h3>
+        <p>List endpoints accept <code>page</code> and <code>page_size</code> query parameters and return a paginated envelope.</p>
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span></div>
+          <pre><code>{
+  <span class="key">"count"</span>: <span class="num">128</span>,
+  <span class="key">"next"</span>: <span class="str">".../resources?page=3"</span>,
+  <span class="key">"previous"</span>: <span class="str">".../resources?page=1"</span>,
+  <span class="key">"results"</span>: [ { ... }, { ... } ]
+}</code></pre>
+        </div>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">page</span> <span class="param-type">integer</span>
+            <div class="param-desc">1-based page number. Default <code>1</code>.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">page_size</span> <span class="param-type">integer</span>
+            <div class="param-desc">Items per page. Default <code>20</code>, max <code>100</code>.</div>
+          </li>
+        </ul>
+
+        <h3 style="margin-top:1.5rem;">Rate Limits</h3>
+        <p>
+          Sensitive authentication endpoints are throttled (for example 5 requests / 15 minutes). When exceeded the API
+          responds with <code>429 Too Many Requests</code>. Inspect the <code>Retry-After</code> response header before retrying.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       NOTE FOR MAINTAINERS
+       The three cards below are templates. Duplicate a card, change
+       the id, the method badge, the URL and the request/response
+       blocks to document a real Presence resource. Remember to add a
+       matching .nav-item inside the "Endpoint Reference" nav-group.
+       ============================================================ -->
+
+  <!-- HEALTH -->
+  <section id="api-health" class="endpoint">
+    <h2>Health Check</h2>
+    <p>Public endpoint used to verify that the Presence API is reachable. No authentication required.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/api/v1/health</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Requirements</h3>
+        <p>None. This endpoint is open and is safe to poll from uptime monitors.</p>
+      </div>
+      <div class="col">
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Healthy</span></div>
+          <pre><code>{
+  <span class="key">"status"</span>: <span class="str">"ok"</span>,
+  <span class="key">"version"</span>: <span class="str">"1.0.0"</span>,
+  <span class="key">"time"</span>: <span class="str">"2026-09-29T12:50:07Z"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIST RESOURCES -->
+  <section id="api-resources-list" class="endpoint">
+    <h2>List Resources</h2>
+    <p>Returns a paginated collection of Presence resources belonging to the authenticated user.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/api/v1/resources</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Query Parameters</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">page</span> <span class="param-type">integer</span>
+            <div class="param-desc">Page number, 1-based.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">page_size</span> <span class="param-type">integer</span>
+            <div class="param-desc">Items per page (max 100).</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">search</span> <span class="param-type">string</span>
+            <div class="param-desc">Optional free-text filter.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">ordering</span> <span class="param-type">string</span>
+            <div class="param-desc">Field to sort by. Prefix with <code>-</code> for descending.</div>
+          </li>
+        </ul>
+        <p>Requires active <code>access</code> cookie.</p>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Paginated</span></div>
+          <pre><code>{
+  <span class="key">"count"</span>: <span class="num">128</span>,
+  <span class="key">"next"</span>: <span class="str">".../resources?page=2"</span>,
+  <span class="key">"previous"</span>: <span class="bool">null</span>,
+  <span class="key">"results"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="str">"res_01H9..."</span>,
+      <span class="key">"name"</span>: <span class="str">"Example"</span>,
+      <span class="key">"created_at"</span>: <span class="str">"2026-09-29T12:50:07Z"</span>
+    }
+  ]
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span>401 Unauthorized</span><span class="code-status error">Expired</span></div>
+          <pre><code>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>: <span class="str">"token_not_valid"</span>,
+    <span class="key">"message"</span>: <span class="str">"Access token expired."</span>
+  }
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CREATE RESOURCE -->
+  <section id="api-resources-create" class="endpoint">
+    <h2>Create Resource</h2>
+    <p>Creates a new resource owned by the authenticated user.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-post">POST</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/api/v1/resources</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Request Body</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">name</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Display name of the resource.</div>
+          </li>
+          <li class="param-item">
+            <span class="param-name">description</span> <span class="param-type">string</span>
+            <div class="param-desc">Optional free-text description.</div>
+          </li>
+        </ul>
+        <p>Requires active <code>access</code> cookie.</p>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header"><span>201 Created</span><span class="code-status success">Created</span></div>
+          <pre><code>{
+  <span class="key">"id"</span>: <span class="str">"res_01H9..."</span>,
+  <span class="key">"name"</span>: <span class="str">"Example"</span>,
+  <span class="key">"description"</span>: <span class="str">""</span>,
+  <span class="key">"created_at"</span>: <span class="str">"2026-09-29T12:50:07Z"</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RETRIEVE RESOURCE -->
+  <section id="api-resources-detail" class="endpoint">
+    <h2>Retrieve Resource</h2>
+    <p>Fetches a single resource by its identifier. Demonstrates a path parameter in the URL.</p>
+    <div class="url-bar">
+      <span class="method-badge badge-get">GET</span>
+      <span><span class="url-base">https://presence-backend-hnix.onrender.com</span>/api/v1/resources/&lt;id&gt;</span>
+    </div>
+    <div class="grid-layout">
+      <div class="col">
+        <h3>Path Parameters</h3>
+        <ul class="param-list">
+          <li class="param-item">
+            <span class="param-name">id</span> <span class="param-type">string (required)</span>
+            <div class="param-desc">Unique identifier of the resource.</div>
+          </li>
+        </ul>
+        <p>Requires active <code>access</code> cookie.</p>
+      </div>
+      <div class="col">
+        <h3>Responses</h3>
+        <div class="code-block">
+          <div class="code-header"><span>200 OK</span><span class="code-status success">Found</span></div>
+          <pre><code>{
+  <span class="key">"id"</span>: <span class="str">"res_01H9..."</span>,
+  <span class="key">"name"</span>: <span class="str">"Example"</span>,
+  <span class="key">"description"</span>: <span class="str">""</span>,
+  <span class="key">"created_at"</span>: <span class="str">"2026-09-29T12:50:07Z"</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span>404 Not Found</span><span class="code-status error">Missing</span></div>
+          <pre><code>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>: <span class="str">"not_found"</span>,
+    <span class="key">"message"</span>: <span class="str">"Resource does not exist."</span>
+  }
+}</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Floating UI -->
+<button class="to-top" id="toTop" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 19V5M5 12l7-7 7 7"/>
+  </svg>
+</button>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================
+     ELEMENT REFERENCES
+     ========================================================== */
+  const body       = document.body;
+  const main       = document.getElementById('main-content');
+  const nav        = document.getElementById('sidebar');
+  const navScroll  = document.getElementById('navScroll');
+  const indicator  = document.getElementById('navIndicator');
+  const progress   = document.getElementById('progressFill');
+  const toTop      = document.getElementById('toTop');
+  const toast      = document.getElementById('toast');
+  const searchInput= document.getElementById('navSearch');
+  const navEmpty   = document.getElementById

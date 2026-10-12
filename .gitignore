@@ -1,0 +1,36 @@
+# Environment / secrets
+.env
+.env.*
+client_secret.json
+gen_tok.py
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Django
+db.sqlite3
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Static/media generated locally
+staticfiles/
+media/
